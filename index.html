@@ -1,0 +1,334 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gallery wall planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#000;--mute:#666;--red:#ff3300;--mono:"Space Mono","SF Mono","Fira Code",monospace}
+  *{box-sizing:border-box}
+  body{font:13px/1.6 var(--mono);margin:0;display:flex;height:100vh;color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased}
+  aside{width:390px;padding:24px 24px 40px;overflow:auto;background:#fff;border-right:3px solid #000;scrollbar-width:thin;scrollbar-color:#000 #fff}
+  main{flex:1;min-width:0;display:flex;background:#f0f0f0}
+  #stage{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  h1{font-size:1.5rem;font-weight:700;line-height:1.15;letter-spacing:-.02em;text-transform:uppercase;margin:0}
+  .sub{font-size:.72rem;color:var(--mute);letter-spacing:.04em;margin:4px 0 20px}
+  section{padding:18px 0 20px;border-top:3px solid #000}
+  h2{font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px;padding-bottom:4px;border-bottom:3px solid #000;display:inline-block}
+  .row{display:flex;align-items:baseline;gap:7px;margin:8px 0;flex-wrap:wrap}
+  .row>span:first-child{width:60px;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+  .row>select{flex:1;min-width:0}
+  input,select,button{font:inherit;color:inherit}
+  input[type=number],input[type=text]{border:0;border-bottom:2px solid #000;border-radius:0;background:none;padding:1px 0;outline:0}
+  input[type=number]{width:44px;text-align:center;-moz-appearance:textfield}
+  input[type=number]::-webkit-inner-spin-button{display:none}
+  input[type=number]:focus,input[type=text]:focus{border-color:var(--red)}
+  input[type=text]{flex:1}
+  input[type=checkbox]{accent-color:#000}
+  input[type=color]{width:20px;height:20px;padding:0;border:2px solid #000;border-radius:0;background:none;cursor:pointer;align-self:center}
+  input[type=color]::-webkit-color-swatch-wrapper{padding:0}input[type=color]::-webkit-color-swatch{border:0}
+  select{border:2px solid #000;border-radius:0;background:#fff;padding:3px 4px;max-width:100%;font-size:.75rem}
+  button{cursor:pointer;border:2px solid #000;border-radius:0;background:none;padding:5px 12px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;transition:all .15s ease}
+  button:hover,button.pri{background:#000;color:#fff}
+  button:hover{box-shadow:3px 3px 0 var(--red)}
+  .note{color:var(--mute);font-size:.72rem;margin:6px 0}
+  a{color:inherit;text-underline-offset:3px}a:hover{color:var(--red)}
+  [hidden]{display:none!important}
+  #wall{position:relative;touch-action:none;overflow:hidden;box-shadow:0 0 0 3px #000,9px 9px 0 #000}
+  .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mute)}
+  .f{position:absolute;cursor:grab;display:flex;box-shadow:3px 3px 0 #0003}
+  .f.sel{outline:2px solid var(--red);outline-offset:4px}
+  .nail{position:absolute;left:50%;width:10px;height:10px;margin:-5px;border-radius:50%;background:#fff;border:2px solid var(--red);cursor:move}
+  .m{background:#fff;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+  .a{background:#ddd center/cover;font-size:10px;color:#0008;display:flex;align-items:center;justify-content:center}
+  #grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-height:250px;overflow:auto;margin:10px 0;padding:2px;scrollbar-width:thin;scrollbar-color:#000 #fff}
+  .th{aspect-ratio:1;background:#ddd center/cover;cursor:pointer;position:relative;border:2px solid #000}
+  .th:hover,.th.on{border-color:var(--red);box-shadow:3px 3px 0 var(--red)}
+  .th b{position:absolute;top:0;right:0;background:#000;color:#fff;padding:0 5px}
+  .file{position:relative;overflow:hidden}.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  table{border-collapse:collapse;width:100%;margin-top:8px}
+  td{padding:6px 0;border-bottom:2px solid #000;vertical-align:top;font-weight:700}
+  td:last-child{text-align:right;white-space:nowrap}
+  td small{color:var(--mute);display:block;font-size:.68rem;font-weight:400}
+  .total td{border-bottom:0;border-top:3px solid #000;text-transform:uppercase;letter-spacing:.06em}
+  .total td:last-child{font-size:1rem;color:var(--red)}
+  @media(max-width:800px){body{flex-direction:column-reverse}aside{width:100%;height:50vh;border-right:0;border-top:3px solid #000}}
+</style>
+<aside>
+  <h1>Gallery wall planner</h1>
+  <p class=sub>Measure twice, hammer once.</p>
+  <section>
+    <h2>Wall</h2>
+    <div class=row><span>Size</span><input id=ww type=number> × <input id=wh type=number> in <input id=wc type=color title="Wall color" style="margin-left:auto"></div>
+    <div class=row><label><input id=st type=checkbox> Stairs on this wall</label>
+      <span id=stopts>going up to the <select id=sdir><option value=r>right</option><option value=l>left</option></select> <input id=srise type=number> in rise</span></div>
+    <div class=row><label><input id=gd type=checkbox> Show the grid and nails</label></div>
+    <div id=cov class=note></div>
+  </section>
+  <section>
+    <h2>Layout</h2>
+    <div class=row><select id=kind><option value=any>Any layout</option><option value=grid>Grid</option><option value=anchor>Big piece, small ones beside</option><option value=salon>Mixed rows</option></select></div>
+    <div class=row><span>Gap</span><input id=gap type=number step=.5 value=2.5> in between frames</div>
+    <div class=row><button id=gen class=pri>New layout</button><button id=add>Add frame</button><button id=clear>Clear</button></div>
+  </section>
+  <section>
+    <h2>Frame</h2>
+    <div id=frame></div>
+  </section>
+  <section>
+    <h2>Art</h2>
+    <div class=row><button id=fill>Fill every frame</button><button class=file>Use my own<input id=up type=file accept="image/*" multiple></button></div>
+    <div class=row><input id=aurl type=text placeholder="or paste a link to an image"><button id=addurl>Add</button></div>
+    <div id=grid></div>
+    <div class=note>Click a frame, then a picture. These are all out of copyright. The images come from Wikimedia Commons.</div>
+  </section>
+  <section>
+    <h2>Cost</h2>
+    <div class=row><span>Frames</span><select id=style></select></div>
+    <div id=shop></div>
+    <div class=row><button id=csv>Save as a spreadsheet (CSV)</button></div>
+    <div class=note>IKEA US prices, copied down on Nov 11, 2026. They change, so check before you buy.</div>
+  </section>
+</aside>
+<main><div id=stage><div id=wall></div></div></main>
+<script>
+const $=id=>document.getElementById(id);
+const num=v=>Math.max(0,+v||0),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pick=a=>a[Math.random()*a.length|0],rnd=(a,b)=>a+(Math.random()*(b-a+1)|0);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const bg=u=>`url(&quot;${u.replace(/'/g,'%27').replace(/"/g,'%22')}&quot;)`;
+// Standard frame opening sizes (in), common US retail sizes.
+const SIZES=[[4,6],[5,5],[5,7],[8,8],[8,10],[8.5,11],[10,10],[11,14],[11,17],[12,12],[12,16],[13,19],[14,18],[16,16],[16,20],[18,24],[20,20],[20,24],[20,30],[24,24],[24,30],[24,36],[27,40],[30,40],[36,36],[36,48]];
+// IKEA US frame prices (series|color|w|h|price), scraped from ikea.com/us. Multi-picture frames and in-store-only items left out.
+const IKEA=`EDSBRUK|black stained|12|16|22.99;EDSBRUK|black stained|16|20|29.99;EDSBRUK|black stained|19.75|27.5|39.99;EDSBRUK|black stained|8|10|16.99;EDSBRUK|white|12|16|22.99;EDSBRUK|white|16|20|29.99;EDSBRUK|white|19.75|27.5|39.99;EDSBRUK|white|8|10|16.99;FIKONTRÄD|white|4|6|2.99;FISKBO|black|12|16|6.99;FISKBO|black|16|20|11.99;FISKBO|black|4|6|1.99;FISKBO|black|5|7|2.99;FISKBO|black|8|10|3.99;FISKBO|dark gray-blue|16|20|9.99;FISKBO|dark gray-blue|5|7|2.99;FISKBO|light gray-green|4|6|1.99;FISKBO|light gray-green|5|7|2.99;FISKBO|white|12|16|6.99;FISKBO|white|16|20|11.99;FISKBO|white|19.75|27.5|16.99;FISKBO|white|4|6|1.99;FISKBO|white|5|7|2.99;FISKBO|white|8|10|3.99;HÄCKHAGTORN|pine|12|16|5.99;HÄCKHAGTORN|pine|16|20|11.99;HÄCKHAGTORN|pine|5|7|2.99;HÄCKHAGTORN|pine|8|10|3.99;KLOTKÖRSBÄR|oak effect/dark-brown|12.25|16.25|14.99;KLOTKÖRSBÄR|oak effect/dark-brown|16|20|19.99;KLOTKÖRSBÄR|oak effect/dark-brown|19.75|27.5|29.99;KLOTKÖRSBÄR|oak effect/dark-brown|8|10|9.99;KNOPPÄNG|black|12|16|11.99;KNOPPÄNG|black|16|20|16.99;KNOPPÄNG|black|19.75|27.5|24.99;KNOPPÄNG|black|24|35.75|34.99;KNOPPÄNG|black|5|7|5.99;KNOPPÄNG|black|8|10|7.99;KNOPPÄNG|white|12|16|11.99;KNOPPÄNG|white|16|20|16.99;KNOPPÄNG|white|19.75|27.5|24.99;KNOPPÄNG|white|24|35.75|34.99;KNOPPÄNG|white|5|7|5.99;KNOPPÄNG|white|8|10|7.99;LOMVIKEN|black|12.5|12.5|19.99;LOMVIKEN|black|12|16|16.99;LOMVIKEN|black|16|20|22.99;LOMVIKEN|black|19.75|27.5|34.99;LOMVIKEN|black|24|35.75|44.99;LOMVIKEN|black|8|10|12.99;LOMVIKEN|gold|12|16|16.99;LOMVIKEN|gold|16|20|22.99;LOMVIKEN|gold|19.75|27.5|34.99;LOMVIKEN|gold|24|35.75|44.99;LOMVIKEN|gold|5|7|9.99;LOMVIKEN|gold|8|10|12.99;PLOMMONTRÄD|pale gray-green|12|16|14.99;PLOMMONTRÄD|pale gray-green|5|7|7.99;RÖDALM|birch effect|12|16|14.99;RÖDALM|birch effect|16|20|19.99;RÖDALM|birch effect|19.75|27.5|29.99;RÖDALM|birch effect|24|36|39.99;RÖDALM|birch effect|27.5|39.25|54.99;RÖDALM|birch effect|5|7|7.99;RÖDALM|birch effect|8|10|9.99;RÖDALM|black|12|16|11.99;RÖDALM|black|16|20|16.99;RÖDALM|black|19.75|27.5|24.99;RÖDALM|black|24|36|34.99;RÖDALM|black|27.5|39.25|49.99;RÖDALM|black|5|7|5.99;RÖDALM|black|8|10|7.99;RÖDALM|oak effect|12|16|14.99;RÖDALM|oak effect|16|20|19.99;RÖDALM|oak effect|19.75|27.5|29.99;RÖDALM|oak effect|24|36|39.99;RÖDALM|oak effect|27.5|39.25|54.99;RÖDALM|oak effect|4|6|6.99;RÖDALM|oak effect|5|7|7.99;RÖDALM|oak effect|8|10|9.99;RÖDALM|red|24|36|34.99;RÖDALM|red|4|6|4.99;RÖDALM|walnut effect|12|16|14.99;RÖDALM|walnut effect|16|20|19.99;RÖDALM|walnut effect|19.75|27.5|29.99;RÖDALM|walnut effect|24|36|39.99;RÖDALM|walnut effect|27.5|39.25|54.99;RÖDALM|walnut effect|5|7|7.99;RÖDALM|walnut effect|8|10|9.99;RÖDALM|white|12|16|11.99;RÖDALM|white|16|20|16.99;RÖDALM|white|19.75|27.5|24.99;RÖDALM|white|24|36|34.99;RÖDALM|white|27.5|39.25|49.99;RÖDALM|white|5|7|5.99;RÖDALM|white|8|10|7.99;SANNAHED|black|19.75|19.75|34.99;SANNAHED|black|9.75|9.75|12.99;SANNAHED|oak effect|19.75|19.75|39.99;SANNAHED|oak effect|9.75|9.75|14.99;SANNAHED|walnut effect|9.75|9.75|14.99;SANNAHED|white|19.75|19.75|34.99;SANNAHED|white|9.75|9.75|12.99;SILVERHÖJDEN|gold|12|16|14.99;SILVERHÖJDEN|gold|16|20|19.99;SILVERHÖJDEN|gold|19.75|27.5|29.99;SILVERHÖJDEN|gold|24|35.75|39.99;SILVERHÖJDEN|gold|5|7|7.99;SILVERHÖJDEN|gold|8|10|9.99;TRIVIALSKOG|rattan|5|7|14.99;TRIVIALSKOG|rattan|8|10|19.99`
+  .split(';').map(s=>{const[a,c,w,h,p]=s.split('|');return{k:a+' '+c,w:+w,h:+h,p:+p}});
+const styles=[...new Set(IKEA.map(r=>r.k))];
+const FCOL=[['gray-blue','#4d5b66'],['gray-green','#aab8a5'],['black','#1c1c1c'],['white','#f5f5f2'],['gold','#c9a646'],['walnut','#6b4630'],['birch','#e3cfa6'],['brown','#5a4030'],['oak','#c8a172'],['pine','#dcc08f'],['red','#a8322d'],['rattan','#c9a878']];
+const frameColor=st=>(FCOL.find(c=>st.includes(c[0]))||[0,'#222'])[1];
+// Built-in prints: public-domain works on Wikimedia Commons. [title, artist, aspect w/h, thumb path]
+const ART=[["Water Lilies","Claude Monet",1.041,"a/aa/Claude_Monet_-_Water_Lilies_-_1906%2C_Ryerson.jpg"],["The Starry Night","Vincent van Gogh",1.253,"6/66/VanGogh-starry_night_ballance1.jpg"],["The Ten Largest, No. 7","Hilma af Klint",0.754,"6/62/Hilma_af_Klint_-_The_Ten_Largest_No._7_-_Adulthood_-_1907.jpg"],["Composition VIII","Wassily Kandinsky",1.373,"8/80/Kandinsky_-_Composition_8%2C_July_1923.jpg"],["View of Delft","Johannes Vermeer",1.204,"e/ed/View_of_Delft%2C_by_Johannes_Vermeer.jpg"],["Impression, Sunrise","Claude Monet",1.289,"5/59/Monet_-_Impression%2C_Sunrise.jpg"],["Carnation, Lily, Lily, Rose","John Singer Sargent",0.885,"e/ed/John_Singer_Sargent_-_Carnation%2C_Lily%2C_Lily%2C_Rose_-_Google_Art_Project.jpg"],["The Kiss","Gustav Klimt",0.997,"4/40/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg"],["Woman with a Parasol","Claude Monet",0.805,"1/1b/Claude_Monet_-_Woman_with_a_Parasol_-_Madame_Monet_and_Her_Son_-_Google_Art_Project.jpg"],["Crow and Blossom","Ohara Koson",0.999,"6/64/Crow_and_blossom_by_Ohara_Koson_cropped.jpg"],["Tree of Life (Stoclet Frieze)","Gustav Klimt",0.527,"b/b0/Klimt_-_Nine_Cartoons_for_the_Stoclet_Frieze-_Part_4%2C_Part_of_the_tree_of_life_%281910-11%29.jpg"],["The Fighting Temeraire","J. M. W. Turner",1.346,"3/30/The_Fighting_Temeraire%2C_JMW_Turner%2C_National_Gallery.jpg"],["Wanderer above the Sea of Fog","Caspar David Friedrich",0.781,"b/b9/Caspar_David_Friedrich_-_Wanderer_above_the_sea_of_fog.jpg"],["Composition II in Red, Blue, and Yellow","Piet Mondrian",0.986,"a/a4/Piet_Mondriaan%2C_1930_-_Mondrian_Composition_II_in_Red%2C_Blue%2C_and_Yellow.jpg"],["Nocturne in Black and Gold","James McNeill Whistler",0.753,"b/b1/Whistler-Nocturne_in_black_and_gold.jpg"],["Among the Sierra Nevada","Albert Bierstadt",1.673,"5/5c/Albert_Bierstadt_-_Among_the_Sierra_Nevada%2C_California_-_Google_Art_Project.jpg"],["Strawberry Thief","William Morris",1.541,"2/2a/Morris_Strawberry_Thief_1883.jpg"],["Castle and Sun","Paul Klee",1.219,"b/bf/Burg_und_Sonne_-_Klee.jpg"],["Poppy Field","Claude Monet",1.312,"8/89/Claude_Monet_-_Poppy_Field_-_Google_Art_Project.jpg"],["Luncheon of the Boating Party","Pierre-Auguste Renoir",1.35,"8/8d/Pierre-Auguste_Renoir_-_Luncheon_of_the_Boating_Party_-_Google_Art_Project.jpg"],["Sunflowers","Vincent van Gogh",0.8,"b/b4/Vincent_Willem_van_Gogh_128.jpg"],["Girl with a Pearl Earring","Johannes Vermeer",0.844,"0/0f/1665_Girl_with_a_Pearl_Earring.jpg"],["Mont Sainte-Victoire and Château Noir","Paul Cézanne",1.256,"2/26/Paul_Cezanne_-_Mont_Sainte-Victoire_and_Ch%C3%A2teau_Noir_-_Google_Art_Project.jpg"],["Discomedusae","Ernst Haeckel",0.697,"d/de/Haeckel_Discomedusae_8.jpg"],["The Boating Party","Mary Cassatt",1.304,"d/d8/Mary_Cassatt_-_The_Boating_Party_-_Google_Art_Project.jpg"],["Yellow-Red-Blue","Wassily Kandinsky",1.555,"a/a6/Kandinsky_-_Jaune_Rouge_Bleu.jpg"],["Suprematist Composition","Kazimir Malevich",0.8,"1/13/Suprematist_Composition_-_Kazimir_Malevich.jpg"],["Senecio","Paul Klee",0.917,"3/3f/Paul_Klee%2C_1922%2C_Senecio%2C_oil_on_gauze%2C_40.3_%C3%97_37.4_cm%2C_Kunstmuseum_Basel.jpg"],["The Dream","Henri Rousseau",1.469,"e/eb/Henri_Rousseau_-_Le_R%C3%AAve_-_Google_Art_Project.jpg"],["L'Étoile","Edgar Degas",0.687,"e/ec/Edgar_Degas_-_Ballet_%28L%27%C3%89toile%29.jpg"],["Hunters in the Snow","Pieter Bruegel the Elder",1.405,"d/d8/Pieter_Bruegel_the_Elder_-_Hunters_in_the_Snow_%28Winter%29_-_Google_Art_Project.jpg"],["Four Trees","Egon Schiele",1.25,"f/fc/Egon_Schiele_094.jpg"],["Breezing Up","Winslow Homer",1.589,"d/d7/Winslow_Homer_-_Breezing_Up_%28A_Fair_Wind%29.jpg"],["Almond Blossom","Vincent van Gogh",1.266,"8/80/Amandelbloesem_-_s0176V1962_-_Van_Gogh_Museum.jpg"],["Blue Horse I","Franz Marc",0.749,"8/82/Marc%2C_Franz_-_Blue_Horse_I_-_Google_Art_Project.jpg"],["American Flamingo","John James Audubon",0.678,"d/d2/Robert_Havell_after_John_James_Audubon%2C_American_Flamingo%2C_1838%2C_NGA_32572.jpg"],["Irises","Vincent van Gogh",1.295,"c/c8/Vincent_van_Gogh_-_Irises_%281889%29.jpg"],["The Milkmaid","Johannes Vermeer",0.892,"2/20/Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg"],["Café Terrace at Night","Vincent van Gogh",0.781,"0/04/Vincent-van-gogh-cafe-terrace-on-the-place-du-forum-arles-at-night-the.jpg"],["A Sunday on La Grande Jatte","Georges Seurat",1.502,"7/7d/A_Sunday_on_La_Grande_Jatte%2C_Georges_Seurat%2C_1884.jpg"],["Plum Park in Kameido","Utagawa Hiroshige",0.68,"a/a8/De_pruimenboomgaard_te_Kameido-Rijksmuseum_RP-P-1956-743.jpeg"],["Sudden Shower over Shin-Ōhashi Bridge","Utagawa Hiroshige",0.66,"7/72/Hiroshige%2C_Sudden_shower_over_Shin-%C5%8Chashi_bridge_and_Atake%2C_1857.jpg"],["The Cradle","Berthe Morisot",0.821,"c/ca/Berthe_Morisot_-_The_Cradle_-_Google_Art_Project.jpg"],["The Great Wave off Kanagawa","Katsushika Hokusai",1.488,"a/a5/Tsunami_by_hokusai_19th_century.jpg"],["The Scream","Edvard Munch",0.806,"c/c5/Edvard_Munch%2C_1893%2C_The_Scream%2C_oil%2C_tempera_and_pastel_on_cardboard%2C_91_x_73_cm%2C_National_Gallery_of_Norway.jpg"],["Kajikazawa in Kai Province","Katsushika Hokusai",1.522,"f/fc/Kajikazawa_in_Kai_province.jpg"],["Surprised! (Tiger in a Tropical Storm)","Henri Rousseau",1.252,"f/fa/Surprised-Rousseau.jpg"],["Jeanne Hébuterne with Hat and Necklace","Amedeo Modigliani",0.766,"7/71/Amedeo-modigliani-jeanne-hebuterne-with-hat-and-necklace.jpg"]]
+  .map(([t,a,r,p])=>{const f=p.split('/').pop();return{id:p,t,a,r,url:'https://upload.wikimedia.org/wikipedia/commons/thumb/'+p+'/500px-'+f,page:'https://commons.wikimedia.org/wiki/File:'+f}});
+
+let S;
+try{S=JSON.parse(localStorage.wallart)}catch(e){}
+S=Object.assign({ww:120,wh:96,wc:'#ffffff',items:[],userArt:[],stairs:{on:false,dir:'r',rise:60},style:'RÖDALM black',sel:-1,guides:true},S||{});
+// shortcut: uploaded art lives in localStorage (~5MB cap, each image shrunk to 600px); move to IndexedDB if people add dozens.
+const save=()=>{try{localStorage.wallart=JSON.stringify(S)}catch(e){}};
+const allArt=()=>[...S.userArt,...ART],artOf=id=>id&&allArt().find(x=>x.id==id);
+const outer=it=>[it.fw+2*it.b,it.fh+2*it.b];
+const crop=(r,fa)=>Math.round((1-Math.min(r,fa)/Math.max(r,fa))*100); // % of print lost to cover-fit
+// nail point: `hd` inches below the frame's top edge and `nx` inches right of its center (where the hanger sits; measure yours). Returns [from left, from top].
+const hd=it=>it.hd??2,nail=it=>[it.x+outer(it)[0]/2+(it.nx||0),it.y+hd(it)];
+const steps=()=>Math.max(1,Math.round(S.stairs.rise/7.5));
+// y (in, from top of wall) of the stair nosing line at x
+const stairY=x=>S.wh-S.stairs.rise*(S.stairs.dir=='r'?x/S.ww:1-x/S.ww);
+
+// cheapest-fitting (smallest) IKEA size in a style for a frame opening; note says if it needs a mat
+function ikeaFor(it,st){
+  const lo=Math.min(it.fw,it.fh),hi=Math.max(it.fw,it.fh);
+  const m=IKEA.filter(r=>r.k==st&&Math.min(r.w,r.h)>=lo&&Math.max(r.w,r.h)>=hi).sort((a,b)=>a.w*a.h-b.w*b.h)[0];
+  return m&&{...m,note:Math.min(m.w,m.h)==lo&&Math.max(m.w,m.h)==hi?'':`sold as ${m.w}×${m.h}, needs a mat`};
+}
+const sizeOpts=cur=>SIZES.map(([w,h])=>`<option value="${w}x${h}"${cur==w+'x'+h?' selected':''}>${w} × ${h}</option>`).join('')+`<option value=custom${cur=='custom'?' selected':''}>Custom</option>`;
+
+function render(){
+  $('ww').value=S.ww;$('wh').value=S.wh;$('wc').value=S.wc;$('gd').checked=S.guides;
+  $('st').checked=S.stairs.on;$('sdir').value=S.stairs.dir;$('srise').value=S.stairs.rise;$('stopts').hidden=!S.stairs.on;$('kind').disabled=S.stairs.on;
+  const k=Math.min(($('stage').clientWidth-80)/S.ww,($('stage').clientHeight-80)/S.wh); // px per inch
+  const w=$('wall');w.style.width=S.ww*k+'px';w.style.height=S.wh*k+'px';w.style.background=S.wc;
+  const G=S.guides,ln=(x1,y1,x2,y2,c,dash)=>`<line x1=${x1} y1=${y1} x2=${x2} y2=${y2} stroke="${c}" stroke-width=1 vector-effect="non-scaling-stroke"${dash?' stroke-dasharray="5 4"':''}/>`;
+  let svg='';
+  if(G){ // 1 ft grid measured from the left and from the floor, wall center line, 57" eye-level line (follows the stairs)
+    for(let x=12;x<S.ww;x+=12)svg+=ln(x,0,x,S.wh,'#00000012')+`<text x=${x+2/k} y=${11/k}>${x/12}'</text>`;
+    for(let y=12;y<S.wh;y+=12)svg+=ln(0,S.wh-y,S.ww,S.wh-y,'#00000012')+`<text x=${3/k} y=${S.wh-y-3/k}>${y/12}'</text>`;
+    const e0=S.stairs.on?stairY(0)-57:S.wh-57,e1=S.stairs.on?stairY(S.ww)-57:S.wh-57;
+    svg+=ln(S.ww/2,0,S.ww/2,S.wh,'#0007',1)+ln(0,e0,S.ww,e1,'#0007',1)}
+  if(S.stairs.on){const n=steps();let d=`M0,${S.wh}`;
+    for(let i=0;i<n;i++){const y=S.wh-(i+1)*S.stairs.rise/n;d+=`L${i*S.ww/n},${y}L${(i+1)*S.ww/n},${y}`}
+    svg+=`<path d="${d}L${S.ww},${S.wh}Z" fill="#000" opacity=".12"${S.stairs.dir=='l'?` transform="translate(${S.ww},0) scale(-1,1)"`:''}/>`}
+  svg=`<svg viewBox="0 0 ${S.ww} ${S.wh}" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;font:700 ${9/k}px 'Space Mono',ui-monospace,monospace;fill:#0008">${svg}</svg>`;
+  w.innerHTML=svg+(S.items.length?'':'<div class=empty>Nothing on the wall yet.</div>')+S.items.map((it,i)=>{const b=it.b*k,a=artOf(it.art);
+    return `<div class="f${i==S.sel?' sel':''}" data-i=${i} style="left:${it.x*k}px;top:${it.y*k}px;width:${it.fw*k+2*b}px;height:${it.fh*k+2*b}px;padding:${b}px;background:${frameColor(it.ik||S.style)}">
+      <div class=m><div class=a style="width:${it.aw*k}px;height:${it.ah*k}px;${a?'background-image:'+bg(a.url):''}">${a?'':`${it.aw}×${it.ah}`}</div></div>${G?`<i class=nail style="top:${hd(it)*k}px;left:calc(50% + ${(it.nx||0)*k}px)"></i>`:''}</div>`}).join('');
+
+  const it=S.items[S.sel];
+  if(!it)$('frame').innerHTML='<div class=note>Click a frame to change it.</div>';
+  else{const a=artOf(it.art),m=ikeaFor(it,it.ik||S.style);
+    $('frame').innerHTML=`<div class=row><span>Style</span><select data-k=ik><option value="">Same as the rest</option>${styles.map(s=>`<option${s==it.ik?' selected':''}>${s}</option>`).join('')}</select></div>
+    <div class=row><span>Size</span><select data-k=size>${sizeOpts(it.size)}</select><label><input type=checkbox data-k=rot ${it.rot?'checked':''}> turn sideways</label></div>
+    ${it.size=='custom'?`<div class=row><span></span><input data-k=fw type=number value=${it.fw}> × <input data-k=fh type=number value=${it.fh}> in</div>`:''}
+    <div class=row><span>Art</span><input data-k=aw type=number value=${it.aw}> × <input data-k=ah type=number value=${it.ah}> in</div>
+    <div class=row><span>Border</span><input data-k=b type=number step=.25 value=${it.b}> in</div>
+    <div class=row><span>Top left</span><input data-k=x type=number step=.5 value=${it.x}> , <input data-k=y type=number step=.5 value=${it.y}></div>
+    <div class=row><span>Hanger</span><input data-k=hd type=number step=.25 value=${hd(it)}> in down, <input data-k=nx type=number step=.25 value=${it.nx||0}> in across</div>
+    <div class=note>Where the hook is on the back: down from the top edge, across from the middle.</div>
+    <div class=row><span>Nail</span><input data-k=nlx type=number step=.5 value=${+nail(it)[0].toFixed(2)}> in across, <input data-k=nly type=number step=.5 value=${+(S.wh-nail(it)[1]).toFixed(2)}> in up</div>
+    <div class=note>Where the nail goes: across from the left end of the wall, up from the floor.</div>
+    <div class=note>${m?`$${m.p.toFixed(2)} at IKEA${m.note?', '+m.note:''}`:"IKEA doesn't sell this style that big."}</div>
+    ${a?`<div class=note>${esc(a.t)}, ${esc(a.a)}. ${crop(a.r,it.aw/it.ah)?`Loses ${crop(a.r,it.aw/it.ah)}% to cropping.`:'Fits without cropping.'}${a.page?` <a href="${a.page}" target=_blank>See the original</a>`:''}</div>`:''}
+    <div class=row><button data-act=dup>Copy</button><button data-act=del>Delete</button>${a?'<button data-act=noart>Take the art out</button>':''}</div>`}
+
+  $('grid').innerHTML=allArt().map(a=>`<div class="th${it&&it.art==a.id?' on':''}" data-art="${esc(a.id)}" title="${esc(a.t)}, ${esc(a.a)}" style="background-image:${bg(a.url)}">${a.page?'':`<b data-adel="${esc(a.id)}">×</b>`}</div>`).join('');
+
+  // width of the whole cluster (bounding box) vs wall; guides suggest 60-75%
+  if(S.items.length){const W=Math.max(...S.items.map(i=>i.x+outer(i)[0]))-Math.min(...S.items.map(i=>i.x)),wp=W/S.ww*100;
+    $('cov').textContent=`The frames take up ${wp.toFixed(0)}% of the wall's width. The usual advice is 60 to 75.`}
+  else $('cov').textContent='';
+
+  let total=0,miss=0;const g={};
+  S.items.forEach(it=>{const st=it.ik||S.style,key=`${it.fw}×${it.fh}|${st}`;(g[key]=g[key]||{n:0,m:ikeaFor(it,st),st,k:`${it.fw} × ${it.fh}`}).n++});
+  $('shop').innerHTML=S.items.length?`<table>${Object.values(g).map(({n,m,st,k})=>{if(m)total+=n*m.p;else miss+=n;
+    return `<tr><td>${n} × ${k}<small>${st}${m&&m.note?', '+m.note:''}</small></td><td>${m?'$'+(n*m.p).toFixed(2):'n/a'}</td></tr>`}).join('')}
+    <tr class=total><td>Total</td><td>$${total.toFixed(2)}</td></tr></table>${miss?`<div class=note>${miss} frame${miss>1?'s are':' is'} bigger than IKEA sells in that style, so ${miss>1?"they aren't":"it isn't"} in the total.</div>`:''}`:'';
+  save();
+}
+
+function setSize(it){ // apply preset to frame size; art follows unless user changed it away
+  if(it.size=='custom')return;
+  let [w,h]=it.size.split('x').map(Number);if(it.rot)[w,h]=[h,w];
+  if(it.aw==it.fw&&it.ah==it.fh||it.aw==it.fh&&it.ah==it.fw){it.aw=w;it.ah=h}
+  it.fw=w;it.fh=h;
+}
+function fillArt(){ // greedy: best aspect match per frame, no repeats until the library runs out
+  let pool=allArt();
+  [...S.items].sort(()=>Math.random()-.5).forEach(it=>{
+    if(!pool.length)pool=allArt();
+    const fa=it.aw/it.ah,best=pool.reduce((a,b)=>Math.abs(Math.log(b.r/fa))<Math.abs(Math.log(a.r/fa))?b:a);
+    it.art=best.id;pool=pool.filter(x=>x!=best)});
+}
+function addArt(url,t,shrink){return new Promise(res=>{const im=new Image();
+  im.onload=()=>{
+    if(shrink){const s=Math.min(1,600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);url=c.toDataURL('image/jpeg',.8)}
+    const a={id:'u'+Date.now()+Math.random().toString(36).slice(2,6),t,a:'My art',r:im.width/im.height,url};
+    S.userArt.unshift(a);if(S.items[S.sel])S.items[S.sel].art=a.id;res(1)};
+  im.onerror=()=>{alert("That image wouldn't load.");res(0)};im.src=url})}
+
+// ---- Random layouts. Rules from gallery-wall guides: 2-3" gaps (2.5 default), cluster 60-75% of wall width,
+// centered ~57" above floor (or above the stair nosing line); types = grid, anchor + flanking stacks, salon rows, staircase diagonal.
+const B=1;
+const small=()=>SIZES.filter(s=>Math.min(...s)>=5&&Math.max(...s)<=14);
+const mid=()=>SIZES.filter(s=>Math.min(...s)>=5&&Math.max(...s)<=24);
+const big=()=>SIZES.filter(s=>Math.max(...s)>=20&&Math.max(...s)<=40&&Math.min(...s)>=16);
+// a box = {s:[w,h] preset, rot, w,h (outer incl. border), x,y}
+function box(s,x,y){const rot=s[0]!=s[1]&&Math.random()<.5?1:0,[w,h]=rot?[s[1],s[0]]:s;return{s,rot,w:w+2*B,h:h+2*B,x,y}}
+const LAYOUTS={
+  grid(g){const s=pick(mid()),c=rnd(2,4),r=rnd(2,3),rot=s[0]!=s[1]&&Math.random()<.5,o=rot?[s[1],s[0]]:s,out=[];
+    for(let i=0;i<c;i++)for(let j=0;j<r;j++)out.push({s,rot:+rot,w:o[0]+2*B,h:o[1]+2*B,x:i*(o[0]+2*B+g),y:j*(o[1]+2*B+g)});return out},
+  anchor(g){const a=box(pick(big()),0,0),cols=[];
+    for(const side of [0,1]){const s=pick(small()),n=Math.max(1,Math.floor((a.h+g)/(s[1]+2*B+g))),col=[];
+      for(let i=0;i<n;i++)col.push(box(s,0,0));
+      col.forEach(b=>{b.w=col[0].w;b.h=col[0].h;b.rot=col[0].rot});cols.push(col)}
+    const ch=c=>c.length*c[0].h+(c.length-1)*g,[L,R]=cols,x=L[0].w+g;
+    L.forEach((b,i)=>{b.x=0;b.y=(a.h-ch(L))/2+i*(b.h+g)});a.x=x;
+    R.forEach((b,i)=>{b.x=x+a.w+g;b.y=(a.h-ch(R))/2+i*(b.h+g)});
+    return [...L,a,...R]},
+  salon(g,maxW){const rows=rnd(1,3),out=[];let y=0;
+    for(let r=0;r<rows;r++){const row=[];let w=0;const target=maxW*(.6+Math.random()*.4);
+      while(w<target){const b=box(pick(mid()),0,0);if(row.length&&w+g+b.w>maxW)break;row.push(b);w+=(row.length>1?g:0)+b.w}
+      const h=Math.max(...row.map(b=>b.h));let x=(maxW-w)/2;
+      row.forEach(b=>{b.x=x;b.y=y+(h-b.h)/2;x+=b.w+g});
+      out.push(...row);y+=h+g}
+    return out}};
+function stairLayout(g){ // frames step up the wall, each centered 57" above the stair line
+  const out=[],sz=SIZES.filter(s=>Math.min(...s)>=8&&Math.max(...s)<=20),one=Math.random()<.4&&pick(sz);
+  for(let x=S.ww*.08;;){const b=box(one||pick(sz),x,0);if(x+b.w>S.ww*.92)break;
+    b.y=stairY(x+b.w/2)-57-b.h/2;if(b.y<2){x+=4;continue}
+    out.push(b);x+=b.w+g}
+  return out}
+function generate(){
+  const g=num($('gap').value)||2.5,maxW=S.ww*.75,maxH=S.wh*.8,r=v=>Math.round(v*2)/2;
+  const use=bs=>{S.items=bs.map(b=>({size:b.s.join('x'),rot:b.rot,fw:b.w-2*B,fh:b.h-2*B,aw:b.w-2*B,ah:b.h-2*B,b:B,x:r(b.x),y:r(b.y)}));S.sel=-1;fillArt();render()};
+  if(S.stairs.on){
+    for(let t=0;t<50;t++){const bs=stairLayout(g);if(bs.length>=2)return use(bs)}
+    return alert('The wall is too short for frames above the stairs. It needs to be about 90 in taller than the stair rise.')}
+  const kind=$('kind').value;
+  for(let t=0;t<300;t++){
+    const bs=LAYOUTS[kind=='any'?pick(Object.keys(LAYOUTS)):kind](g,maxW);
+    const x0=Math.min(...bs.map(b=>b.x)),y0=Math.min(...bs.map(b=>b.y)),
+      W=Math.max(...bs.map(b=>b.x+b.w))-x0,H=Math.max(...bs.map(b=>b.y+b.h))-y0;
+    // aim for the 60-75% width band; after 200 misses accept anything that fits (small walls)
+    if(W>maxW||H>maxH||bs.length<2||(t<200&&W<S.ww*.6))continue;
+    const ox=(S.ww-W)/2-x0,oy=Math.max(0,Math.min(S.wh-H,S.wh-57-H/2))-y0;
+    bs.forEach(b=>{b.x+=ox;b.y+=oy});return use(bs)}
+  alert('Nothing fits on this wall. Try a different layout or a bigger wall.');
+}
+// self-check, run selfTest() in the console: generated layouts stay on the wall and never overlap
+function selfTest(){let bad=0;const save0=JSON.stringify(S);
+  for(const st of [0,1])for(let n=0;n<150;n++){S.stairs.on=!!st;S.wh=st?160:96;generate();
+    const it=S.items.map(i=>({x:i.x,y:i.y,w:outer(i)[0],h:outer(i)[1]}));
+    it.forEach((p,a)=>{if(p.x<0||p.y<0||p.x+p.w>S.ww||p.y+p.h>S.wh||(st&&p.y+p.h>stairY(p.x+p.w/2)))bad++;
+      it.slice(a+1).forEach(q=>{if(p.x<q.x+q.w-.01&&q.x<p.x+p.w-.01&&p.y<q.y+q.h-.01&&q.y<p.y+p.h-.01)bad++})})}
+  S=JSON.parse(save0);render();console.assert(!bad,'layout self-test failed',bad);return bad}
+
+// ---- events
+$('ww').onchange=e=>{S.ww=num(e.target.value)||1;render()};
+$('wh').onchange=e=>{S.wh=num(e.target.value)||1;render()};
+$('wc').oninput=e=>{S.wc=e.target.value;render()};
+$('st').onchange=e=>{S.stairs.on=e.target.checked;if(S.stairs.on)S.wh=Math.max(S.wh,S.stairs.rise+90);render()};
+$('gd').onchange=e=>{S.guides=e.target.checked;render()};
+$('sdir').onchange=e=>{S.stairs.dir=e.target.value;render()};
+$('srise').onchange=e=>{S.stairs.rise=clamp(num(e.target.value),8,S.wh);render()};
+$('gen').onclick=generate;
+$('fill').onclick=()=>{fillArt();render()};
+$('clear').onclick=()=>{S.items=[];S.sel=-1;render()};
+$('add').onclick=()=>{S.items.push({size:'16x20',rot:0,fw:16,fh:20,aw:16,ah:20,b:1,x:Math.round(S.ww/2-9),y:Math.round(S.wh/2-11)});S.sel=S.items.length-1;render()};
+$('style').innerHTML=styles.map(k=>`<option${k==S.style?' selected':''}>${k}</option>`).join('');
+$('style').onchange=e=>{S.style=e.target.value;render()};
+// one row per frame, plus a total; quoted so titles with commas survive
+function toCsv(){let total=0;
+  const rows=S.items.map((it,i)=>{const st=it.ik||S.style,m=ikeaFor(it,st),a=artOf(it.art);if(m)total+=m.p;
+    return [i+1,it.fw,it.fh,it.aw,it.ah,a?a.t:'',a?a.a:'',st,m?m.w+'x'+m.h:'none',m?m.p.toFixed(2):'',it.x,it.y,nail(it)[0],S.wh-nail(it)[1],a&&a.page||'']});
+  return [['#','Frame W (in)','Frame H (in)','Art W (in)','Art H (in)','Print','Artist','IKEA frame','IKEA size','Price (USD)','X (in)','Y (in)','Nail from left (in)','Nail from floor (in)','Print source'],
+    ...rows,['Total','','','','','','','','',total.toFixed(2),'','','','','']]
+    .map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n')}
+$('csv').onclick=()=>{if(!S.items.length)return alert('There are no frames to save yet.');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+toCsv()],{type:'text/csv'}));a.download='wall-art-plan.csv';a.click();URL.revokeObjectURL(a.href)};
+$('up').onchange=async e=>{
+  for(const f of e.target.files){const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});await addArt(url,f.name.replace(/\.\w+$/,''),true)}
+  e.target.value='';render()};
+$('addurl').onclick=async()=>{const u=$('aurl').value.trim();
+  if(!/^https?:\/\//.test(u))return alert('That needs to be a web link, starting with http:// or https://');
+  if(await addArt(u,decodeURIComponent(u.split(/[?#]/)[0].split('/').pop()).slice(0,40)||'Image'))$('aurl').value='';render()};
+const removeSel=()=>{S.items.splice(S.sel,1);S.sel=-1};
+$('frame').onchange=e=>{
+  const t=e.target,k=t.dataset.k,it=S.items[S.sel];if(!k||!it)return;
+  if(k=='size')it.size=t.value;else if(k=='rot')it.rot=+t.checked;else if(k=='ik')it.ik=t.value;else if(k=='nx')it.nx=+t.value||0;
+  else if(k=='nlx')it.x+=num(t.value)-nail(it)[0]; // typing the nail's wall position moves the frame
+  else if(k=='nly')it.y+=S.wh-num(t.value)-nail(it)[1];
+  else it[k]=num(t.value);
+  if(k=='size'||k=='rot')setSize(it);
+  render()};
+$('frame').onclick=e=>{
+  const a=e.target.dataset.act,it=S.items[S.sel];if(!a||!it)return;
+  if(a=='del')removeSel();
+  else if(a=='noart')it.art='';
+  else{S.items.push({...it,x:Math.min(it.x+4,S.ww-outer(it)[0]),y:Math.min(it.y+4,S.wh-outer(it)[1])});S.sel=S.items.length-1}
+  render()};
+$('grid').onclick=e=>{
+  const d=e.target.dataset,it=S.items[S.sel];
+  if(d.adel)S.userArt=S.userArt.filter(a=>a.id!=d.adel);
+  else if(d.art&&it)it.art=d.art;
+  else return;
+  render()};
+addEventListener('keydown',e=>{
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||!S.items[S.sel])return;
+  if(e.key=='Delete'||e.key=='Backspace'){removeSel();render()}});
+// drag frames on the wall; click empty wall to deselect
+let drag;
+$('wall').onpointerdown=e=>{
+  const el=e.target.closest('.f');
+  if(!el){if(S.sel!=-1){S.sel=-1;render()}return}
+  const i=+el.dataset.i,o=S.items[i];S.sel=i;
+  const nl=e.target.classList.contains('nail'); // dragging by the nail snaps the nail (not the frame corner) to the half inch
+  drag={o,el,nl,sx:e.clientX,sy:e.clientY,ox:o.x,oy:o.y,k:$('wall').clientWidth/S.ww};
+  $('wall').setPointerCapture(e.pointerId);
+};
+$('wall').onpointermove=e=>{
+  if(!drag)return;const o=drag.o;
+  const ax=drag.nl?outer(o)[0]/2+(o.nx||0):0,ay=drag.nl?hd(o):0,q=v=>Math.round(v*2)/2; // snap to 0.5"
+  o.x=q(drag.ox+ax+(e.clientX-drag.sx)/drag.k)-ax;
+  o.y=q(drag.oy+ay+(e.clientY-drag.sy)/drag.k)-ay;
+  drag.el.style.left=o.x*drag.k+'px';drag.el.style.top=o.y*drag.k+'px';
+};
+$('wall').onpointerup=()=>{if(drag){drag=null;render()}};
+addEventListener('resize',render);
+render();
+</script>
